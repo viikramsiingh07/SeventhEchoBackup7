@@ -9,7 +9,7 @@ public class StalkerAI : MonoBehaviour
     public Animator animator;
     public Transform targetPoint;
     public Transform[] eyePoints;
-    public LineRenderer[] lasers;
+    public StalkerLaser[] lasers;
 
     [Header("Movement")]
     public float floatSpeed = 2f;
@@ -38,7 +38,7 @@ public class StalkerAI : MonoBehaviour
     {
         startPos = transform.position;
         randomOffset = Random.Range(0f, 100f);
-        lastFireTime = -fireRate; // prevents firing immediately on spawn
+        lastFireTime = -fireRate;
     }
 
     void Update()
@@ -52,7 +52,6 @@ public class StalkerAI : MonoBehaviour
 
         if (distance < detectionRange)
         {
-            // 🔴 DETECTED - player is close
             FacePlayer();
 
             if (!isFiring && Time.time > lastFireTime + fireRate)
@@ -63,7 +62,6 @@ public class StalkerAI : MonoBehaviour
         }
         else
         {
-            // 🟢 FLOAT FREELY - player is far
             FloatMovement();
             DisableAllLasers();
         }
@@ -90,12 +88,27 @@ public class StalkerAI : MonoBehaviour
     {
         isFiring = true;
 
-        // Charge phase - lasers off
-        DisableAllLasers();
-        yield return new WaitForSeconds(chargeTime);
+        // Phase 1 - Charge: lasers flicker toward player
+        foreach (var l in lasers)
+            if (l != null) l.StartCharging();
 
-        // Tracking phase - lasers follow player
         float timer = 0f;
+        while (timer < chargeTime)
+        {
+            for (int i = 0; i < lasers.Length; i++)
+            {
+                if (i >= eyePoints.Length || lasers[i] == null) continue;
+                lasers[i].SetPositions(eyePoints[i].position, GetTargetPosition());
+            }
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        // Phase 2 - Tracking: full glowing laser tracks player
+        foreach (var l in lasers)
+            if (l != null) l.StartFiring();
+
+        timer = 0f;
         while (timer < trackTime)
         {
             UpdateLasers(GetTargetPosition());
@@ -103,7 +116,7 @@ public class StalkerAI : MonoBehaviour
             yield return null;
         }
 
-        // Fire phase - lock on and deal damage
+        // Phase 3 - Fire: lock on, deal damage, spawn hit effect
         Vector3 finalTarget = GetTargetPosition();
         UpdateLasers(finalTarget);
 
@@ -133,22 +146,15 @@ public class StalkerAI : MonoBehaviour
     {
         for (int i = 0; i < lasers.Length; i++)
         {
-            if (i >= eyePoints.Length) break;
-            if (lasers[i] == null || eyePoints[i] == null) continue;
-
-            lasers[i].enabled = true;
-            lasers[i].SetPosition(0, eyePoints[i].position);
-            lasers[i].SetPosition(1, target);
+            if (i >= eyePoints.Length || lasers[i] == null) continue;
+            lasers[i].SetPositions(eyePoints[i].position, target);
         }
     }
 
     void DisableAllLasers()
     {
         foreach (var l in lasers)
-        {
-            if (l != null)
-                l.enabled = false;
-        }
+            if (l != null) l.StopLaser();
     }
 
     void FacePlayer()

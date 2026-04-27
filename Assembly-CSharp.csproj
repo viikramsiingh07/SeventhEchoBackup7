@@ -82,6 +82,7 @@
     <Compile Include="Assets\Prefabs\Player\Scripts\LandingDustSpawner.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\ShadowScale.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\PlayerMovement.cs" />
+    <Compile Include="Assets\Prefabs\Enemy\Scripts\StalkerLaser.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\Testing.cs" />
     <Compile Include="Assets\Prefabs\Enemy\Scripts\CamerShake.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\MovingRockUpDown.cs" />
