@@ -14,9 +14,9 @@ TagManager:
   - Background_Far
   - Background_Mid
   - Background_Near
-  - 
-  - 
-  - 
+  - Player
+  - RockBody
+  - Below Player
   - 
   - 
   - 
@@ -40,6 +40,9 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Below Player
+    uniqueID: 243049397
     locked: 0
   m_RenderingLayers:
   - Default

@@ -3,6 +3,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{8AFACB24-C045-FD6A-F040-9CCA30C2B817}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityPlayModeSaver", "UnityPlayModeSaver.csproj", "{33AD53B1-C9D5-417B-A24A-C11E08F8ADDF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityPlayModeSaverEditor", "UnityPlayModeSaverEditor.csproj", "{954F7A9E-70B2-D299-4877-8EF317D7169C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +17,14 @@ Global
 		{8AFACB24-C045-FD6A-F040-9CCA30C2B817}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AFACB24-C045-FD6A-F040-9CCA30C2B817}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AFACB24-C045-FD6A-F040-9CCA30C2B817}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33AD53B1-C9D5-417B-A24A-C11E08F8ADDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33AD53B1-C9D5-417B-A24A-C11E08F8ADDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33AD53B1-C9D5-417B-A24A-C11E08F8ADDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33AD53B1-C9D5-417B-A24A-C11E08F8ADDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{954F7A9E-70B2-D299-4877-8EF317D7169C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{954F7A9E-70B2-D299-4877-8EF317D7169C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{954F7A9E-70B2-D299-4877-8EF317D7169C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{954F7A9E-70B2-D299-4877-8EF317D7169C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
