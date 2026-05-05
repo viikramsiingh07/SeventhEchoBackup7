@@ -44,6 +44,13 @@ public class PlayerMovement : MonoBehaviour
     [Header("Animator")]
     public string didJumpBool = "didJump";
 
+    [Header("Dash")]
+    public float dashSpeed = 18f;
+    public float dashMinDuration = 0.4f;
+    public float dashCooldown = 0.8f;
+    public float doubleTapWindow = 0.25f;
+    public float dashParticleVelocityX = 15f; // Speed of streak particles
+
     [Header("Debug")]
     public bool debugGround = false;
 
@@ -52,6 +59,7 @@ public class PlayerMovement : MonoBehaviour
     private Animator animator;
     private Transform graphics;
     private PlayerInputActions input;
+    private ParticleSystem dashParticles;
 
     private Vector2 moveInput;
     private bool jumpPressed;
@@ -68,6 +76,16 @@ public class PlayerMovement : MonoBehaviour
     private Collider2D currentGroundCollider;
     private Rigidbody2D currentGroundRigidbody;
     private Vector2 currentGroundVelocity;
+
+    private bool isDashing = false;
+    private float dashDirection = 0f;
+    private float dashCooldownRemaining = 0f;
+    private float dashTimeRemaining = 0f;
+
+    private float lastRightTapTime = -999f;
+    private float lastLeftTapTime = -999f;
+    private bool prevRightHeld = false;
+    private bool prevLeftHeld = false;
 
     public bool IsGrounded => isGrounded;
 
@@ -90,6 +108,10 @@ public class PlayerMovement : MonoBehaviour
             SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
             graphics = sr != null ? sr.transform : transform;
         }
+
+        dashParticles = GetComponent<ParticleSystem>();
+        if (dashParticles == null)
+            dashParticles = GetComponentInChildren<ParticleSystem>();
 
         input = new PlayerInputActions();
 
@@ -138,6 +160,58 @@ public class PlayerMovement : MonoBehaviour
         input.Player.Disable();
     }
 
+    private void Update()
+    {
+        bool rightHeld = moveInput.x > 0.5f;
+        bool leftHeld = moveInput.x < -0.5f;
+
+        if (rightHeld && !prevRightHeld)
+        {
+            if (Time.time - lastRightTapTime <= doubleTapWindow)
+                TryStartDash(1f);
+            else
+                lastRightTapTime = Time.time;
+        }
+
+        if (leftHeld && !prevLeftHeld)
+        {
+            if (Time.time - lastLeftTapTime <= doubleTapWindow)
+                TryStartDash(-1f);
+            else
+                lastLeftTapTime = Time.time;
+        }
+
+        prevRightHeld = rightHeld;
+        prevLeftHeld = leftHeld;
+    }
+
+    private void TryStartDash(float dir)
+    {
+        if (isDashing) return;
+        if (!isGrounded) return;
+        if (dashCooldownRemaining > 0f) return;
+        if (crouchHeld) return;
+        if (lockMovementDuringAttack && isAttacking) return;
+
+        dashDirection = dir;
+        isDashing = true;
+        dashTimeRemaining = dashMinDuration;
+        dashCooldownRemaining = dashCooldown;
+
+        if (dashParticles != null)
+        {
+            // Flip particle velocity based on dash direction
+            // Dashing right → streaks go left (negative X)
+            // Dashing left → streaks go right (positive X)
+            var vel = dashParticles.velocityOverLifetime;
+            vel.enabled = true;
+            vel.x = new ParticleSystem.MinMaxCurve(dir > 0f ? -dashParticleVelocityX : dashParticleVelocityX);
+            vel.y = new ParticleSystem.MinMaxCurve(0f);
+            vel.z = new ParticleSystem.MinMaxCurve(0f);
+            dashParticles.Play();
+        }
+    }
+
     private void FixedUpdate()
     {
         CheckGrounded();
@@ -152,6 +226,10 @@ public class PlayerMovement : MonoBehaviour
             isAttacking = false;
         }
 
+        if (dashCooldownRemaining > 0f)
+            dashCooldownRemaining = Mathf.Max(0f, dashCooldownRemaining - Time.fixedDeltaTime);
+
+        HandleDash();
         HandleMovement();
         HandleJump();
         ApplyBetterGravity();
@@ -160,6 +238,27 @@ public class PlayerMovement : MonoBehaviour
 
         jumpPressed = false;
         attackPressed = false;
+    }
+
+    private void HandleDash()
+    {
+        if (!isDashing) return;
+
+        dashTimeRemaining -= Time.fixedDeltaTime;
+
+        float rawX = moveInput.x;
+        bool stillHolding = (dashDirection > 0f && rawX > 0.1f) ||
+                            (dashDirection < 0f && rawX < -0.1f);
+
+        if (dashTimeRemaining > 0f || stillHolding)
+        {
+            rb.linearVelocity = new Vector2(dashDirection * dashSpeed, 0f);
+        }
+        else
+        {
+            isDashing = false;
+            if (dashParticles != null) dashParticles.Stop();
+        }
     }
 
     private void CheckGrounded()
@@ -283,6 +382,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleMovement()
     {
+        if (isDashing) return;
+
         if (lockMovementDuringAttack && isAttacking)
         {
             rb.linearVelocity = new Vector2(currentGroundVelocity.x, rb.linearVelocity.y);
@@ -335,6 +436,13 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!jumpPressed) return;
 
+        if (isDashing)
+        {
+            isDashing = false;
+            dashTimeRemaining = 0f;
+            if (dashParticles != null) dashParticles.Stop();
+        }
+
         float relativeY = rb.linearVelocity.y - currentGroundVelocity.y;
         bool withinGrace = (Time.time - lastGroundedTime) <= groundedGraceTime;
         bool canUseCoyote = withinGrace && relativeY <= coyoteGroundedMaxRelativeYSpeed;
@@ -354,6 +462,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void ApplyBetterGravity()
     {
+        if (isDashing) return;
+
         if (rb.linearVelocity.y < 0f)
         {
             rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1f) * Time.fixedDeltaTime;
@@ -382,9 +492,8 @@ public class PlayerMovement : MonoBehaviour
     {
         if (animator == null) return;
 
-        // Don't override animator when dead
         AnimatorStateInfo st = animator.GetCurrentAnimatorStateInfo(0);
-        if (st.IsName("Death")) return;  // ← ADD THIS LINE
+        if (st.IsName("Death")) return;
 
         bool isCrouching = crouchHeld && isGrounded;
         bool allowRun = !(lockMovementDuringAttack && isAttacking);
@@ -395,6 +504,7 @@ public class PlayerMovement : MonoBehaviour
         SetAnimatorBoolIfExists("isRunning", isRunning);
         SetAnimatorFloatIfExists("yVelocity", rb.linearVelocity.y);
         SetAnimatorBoolIfExists(didJumpBool, didJump);
+        SetAnimatorBoolIfExists("isDashing", isDashing);
     }
 
     private void SetAnimatorBoolIfExists(string param, bool value)
@@ -444,7 +554,6 @@ public class PlayerMovement : MonoBehaviour
     private void OnAttack(InputAction.CallbackContext ctx)
     {
         attackPressed = true;
-        // Directly trigger attack to avoid FixedUpdate timing miss
         if (animator != null && !isAttacking)
         {
             animator.ResetTrigger(attackTrigger);

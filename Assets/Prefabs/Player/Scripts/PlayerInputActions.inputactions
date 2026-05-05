@@ -41,15 +41,6 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
-                },
-                {
-                    "name": "Dash",
-                    "type": "Button",
-                    "id": "bded963e-427a-41ad-8d8f-89535ffbbd29",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -140,28 +131,6 @@
                     "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": true
-                },
-                {
-                    "name": "",
-                    "id": "247f0bec-935f-49ef-a10f-ee89ee26beed",
-                    "path": "<Keyboard>/d",
-                    "interactions": "MultiTap(tapDelay=0.3)",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Dash",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5a4f5c46-47d7-44e0-9e1f-cddbc6bc1a78",
-                    "path": "<Keyboard>/a",
-                    "interactions": "MultiTap(tapDelay=0.3)",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Dash",
-                    "isComposite": false,
-                    "isPartOfComposite": false
                 }
             ]
         }
