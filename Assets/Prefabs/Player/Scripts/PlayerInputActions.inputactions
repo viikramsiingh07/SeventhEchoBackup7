@@ -4,30 +4,48 @@
     "maps": [
         {
             "name": "Player",
-            "id": "1887e47a-8edb-41f0-b603-b75bfab40d2d",
+            "id": "3a29afef-6041-4d62-bac6-a0be677e8ba3",
             "actions": [
                 {
-                    "name": "Move",
-                    "type": "Value",
-                    "id": "2570c61a-0296-46a0-a624-3dd59ab82f3f",
-                    "expectedControlType": "Vector2",
+                    "name": "Attack",
+                    "type": "Button",
+                    "id": "2cd18795-60b0-49c6-8631-676ca2d1f8a2",
+                    "expectedControlType": "",
                     "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
+                    "interactions": "MultiTap(tapTime=0.2,tapDelay=0.3,pressPoint=0.5)",
+                    "initialStateCheck": false
                 },
                 {
-                    "name": "Jump",
+                    "name": "Crouch",
                     "type": "Button",
-                    "id": "64b3cff3-7289-4966-a198-0af780a70609",
+                    "id": "de29e406-635e-45b3-a410-e35c38e64bfe",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Crouch",
+                    "name": "Jump",
                     "type": "Button",
-                    "id": "a4c578e9-e37d-4940-81e1-efd23915b1c0",
+                    "id": "595753a6-515f-444f-a316-98d9b1dee272",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Move",
+                    "type": "Value",
+                    "id": "7addd986-daa1-4cf6-864f-eee3f9d2e9b7",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Dash",
+                    "type": "Button",
+                    "id": "bded963e-427a-41ad-8d8f-89535ffbbd29",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -36,8 +54,41 @@
             ],
             "bindings": [
                 {
+                    "name": "",
+                    "id": "0578e9b3-33df-4c65-8310-28651859e9f3",
+                    "path": "<Keyboard>/f",
+                    "interactions": "Press",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Attack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2dd64912-19ca-4c88-9640-e90ed65a0412",
+                    "path": "<Keyboard>/c",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Crouch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b539b067-6b68-4327-b558-374a3cf57b3b",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
                     "name": "2D Vector",
-                    "id": "228a8424-074f-4a55-9a31-64042fc27d01",
+                    "id": "be3bce90-a98b-4136-b838-37af41b38868",
                     "path": "2DVector",
                     "interactions": "",
                     "processors": "",
@@ -48,7 +99,7 @@
                 },
                 {
                     "name": "up",
-                    "id": "2960d408-b7e7-49e6-8682-02f5f681fd64",
+                    "id": "06394a2c-f8e4-491e-b417-f697181100c9",
                     "path": "<Keyboard>/w",
                     "interactions": "",
                     "processors": "",
@@ -59,7 +110,7 @@
                 },
                 {
                     "name": "down",
-                    "id": "f3038633-334f-441b-a7af-397d9209e9b7",
+                    "id": "6484d351-4f1f-4ab0-b02d-c117987bbb2c",
                     "path": "<Keyboard>/s",
                     "interactions": "",
                     "processors": "",
@@ -70,7 +121,7 @@
                 },
                 {
                     "name": "left",
-                    "id": "001dc588-e225-4cb2-8fad-3834ebe7b485",
+                    "id": "51706fca-17d5-4f35-aea0-52afabc456d6",
                     "path": "<Keyboard>/a",
                     "interactions": "",
                     "processors": "",
@@ -81,7 +132,7 @@
                 },
                 {
                     "name": "right",
-                    "id": "76913715-5f5b-45a7-ad84-0642c4dc5f05",
+                    "id": "3686f13c-1a7d-48d6-ba49-12adfc352a92",
                     "path": "<Keyboard>/d",
                     "interactions": "",
                     "processors": "",
@@ -92,23 +143,23 @@
                 },
                 {
                     "name": "",
-                    "id": "b6430915-33ab-4bcc-9195-be88198641d1",
-                    "path": "<Keyboard>/space",
-                    "interactions": "",
+                    "id": "247f0bec-935f-49ef-a10f-ee89ee26beed",
+                    "path": "<Keyboard>/d",
+                    "interactions": "MultiTap(tapDelay=0.3)",
                     "processors": "",
                     "groups": "",
-                    "action": "Jump",
+                    "action": "Dash",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
                 {
                     "name": "",
-                    "id": "7b580ddb-1cdf-4140-ba30-4b6211b36f02",
-                    "path": "<Keyboard>/c",
-                    "interactions": "",
+                    "id": "5a4f5c46-47d7-44e0-9e1f-cddbc6bc1a78",
+                    "path": "<Keyboard>/a",
+                    "interactions": "MultiTap(tapDelay=0.3)",
                     "processors": "",
                     "groups": "",
-                    "action": "Crouch",
+                    "action": "Dash",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

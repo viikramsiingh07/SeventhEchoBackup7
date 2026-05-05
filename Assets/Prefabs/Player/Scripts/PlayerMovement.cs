@@ -441,7 +441,16 @@ public class PlayerMovement : MonoBehaviour
     private void OnCrouch(InputAction.CallbackContext ctx) => crouchHeld = true;
     private void OnCrouchCancel(InputAction.CallbackContext ctx) => crouchHeld = false;
 
-    private void OnAttack(InputAction.CallbackContext ctx) => attackPressed = true;
+    private void OnAttack(InputAction.CallbackContext ctx)
+    {
+        attackPressed = true;
+        // Directly trigger attack to avoid FixedUpdate timing miss
+        if (animator != null && !isAttacking)
+        {
+            animator.ResetTrigger(attackTrigger);
+            animator.SetTrigger(attackTrigger);
+        }
+    }
 
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
