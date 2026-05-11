@@ -244,6 +244,13 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!isDashing) return;
 
+        if (!isGrounded)
+        {
+            isDashing = false;
+            if (dashParticles != null) dashParticles.Stop();
+            return;
+        }
+
         dashTimeRemaining -= Time.fixedDeltaTime;
 
         float rawX = moveInput.x;

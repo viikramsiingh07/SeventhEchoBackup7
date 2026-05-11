@@ -70,12 +70,14 @@
     <Compile Include="Assets\Prefabs\Player\Scripts\GhostTrail.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\PlayerHealth.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\CameraDown.cs" />
+    <Compile Include="Assets\Prefabs\Player\Scripts\SlashVFXMaterial.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\RestoreCamera.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\OneWayCloudPlatform.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\StepDownPlatform.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\HealthUI.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\windscript.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\PlayerInputActions.cs" />
+    <Compile Include="Assets\Prefabs\Player\Scripts\SlashArcVFX.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\NinjaAttack.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\MovingPlatform.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\CameraFollowXY.cs" />
@@ -83,6 +85,7 @@
     <Compile Include="Assets\Prefabs\Player\Scripts\LandingDustSpawner.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\ShadowScale.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\PlayerMovement.cs" />
+    <Compile Include="Assets\Prefabs\Player\Scripts\ImpactBurstVFX.cs" />
     <Compile Include="Assets\Prefabs\Enemy\Scripts\StalkerLaser.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\Testing.cs" />
     <Compile Include="Assets\Prefabs\Enemy\Scripts\CamerShake.cs" />
