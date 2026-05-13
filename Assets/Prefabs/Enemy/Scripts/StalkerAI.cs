@@ -75,13 +75,16 @@ public class StalkerAI : MonoBehaviour
         float time = Time.time + randomOffset;
         float waveY = Mathf.Sin(time * floatFrequency) * floatHeight * Time.deltaTime;
 
-        transform.Translate(new Vector2(moveX, waveY));
-        Flip(direction);
-
-        if (Mathf.Abs(transform.position.x - startPos.x) >= floatDistance)
+        // Check BEFORE moving to prevent overshoot flip-lock
+        float nextX = transform.position.x + moveX;
+        if (Mathf.Abs(nextX - startPos.x) >= floatDistance)
         {
             direction *= -1;
+            moveX = direction * (floatSpeed + variation) * Time.deltaTime;
         }
+
+        transform.Translate(new Vector2(moveX, waveY));
+        Flip(direction);
     }
 
     IEnumerator LaserSequence()
