@@ -6896,6 +6896,7 @@ GameObject:
   - component: {fileID: 665721947}
   - component: {fileID: 665721945}
   - component: {fileID: 665721948}
+  - component: {fileID: 665721949}
   m_Layer: 0
   m_Name: Prowler
   m_TagString: Untagged
@@ -6912,7 +6913,7 @@ Transform:
   m_GameObject: {fileID: 665721943}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -233.07, y: -62.2, z: 0}
+  m_LocalPosition: {x: -263.94553, y: -39.43682, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6932,19 +6933,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProwlerAI
   walkSpeed: 2.5
-  chaseSpeed: 4
-  detectionRange: 14.41
-  attackRange: 3.23
-  attackCooldown: 2
-  leapSpeed: 15
-  leapDuration: 2
-  damage: 15
-  player: {fileID: 1143491695}
   graphics: {fileID: 667807421}
-  animator: {fileID: 667807422}
+  animator: {fileID: 0}
   groundLayer:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 0
   showGizmos: 1
 --- !u!50 &665721947
 Rigidbody2D:
@@ -6961,8 +6954,8 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 1
-  m_Material: {fileID: 6200000, guid: f382d46c76d64d04890569b54e6b0917, type: 2}
+  m_GravityScale: 3
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -6973,8 +6966,8 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
---- !u!70 &665721948
-CapsuleCollider2D:
+--- !u!61 &665721948
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -6983,7 +6976,7 @@ CapsuleCollider2D:
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
-  m_Material: {fileID: 6200000, guid: f382d46c76d64d04890569b54e6b0917, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -7007,9 +7000,64 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 3.9297838, y: -16.453424}
-  m_Size: {x: 3.7520137, y: 2.6008456}
-  m_Direction: 1
+  m_Offset: {x: -8.0672455, y: -39.820698}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 2.125824, y: 1.7313156}
+  m_EdgeRadius: 0
+--- !u!61 &665721949
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 665721943}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: -8.076874, y: -39.815205}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 2.0966797, y: 1.7153244}
+  m_EdgeRadius: 0
 --- !u!1 &667807420
 GameObject:
   m_ObjectHideFlags: 0
@@ -7037,8 +7085,8 @@ Transform:
   m_GameObject: {fileID: 667807420}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.19, y: -16.95, z: 0}
-  m_LocalScale: {x: 1.5, y: 1.5, z: 1}
+  m_LocalPosition: {x: -8.7813, y: -40.1267, z: 0}
+  m_LocalScale: {x: 1.4665182, y: 1.45755, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 665721944}
@@ -10624,7 +10672,7 @@ MonoBehaviour:
   airControlLerp: 0.327
   groundLayer:
     serializedVersion: 2
-    m_Bits: 4104
+    m_Bits: 8
   groundCheckDistance: 0.05
   minGroundNormalY: 0.35
   groundedGraceTime: 0.18
@@ -10682,7 +10730,7 @@ CapsuleCollider2D:
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
-  m_Material: {fileID: 6200000, guid: f382d46c76d64d04890569b54e6b0917, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -10706,8 +10754,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0.1708714, y: 2.9999576}
-  m_Size: {x: 1.3179239, y: 3.7003102}
+  m_Offset: {x: 0.1708714, y: 3.0861206}
+  m_Size: {x: 1.3179239, y: 3.6899846}
   m_Direction: 0
 --- !u!95 &1143491700
 Animator:
@@ -16341,7 +16389,7 @@ GameObject:
   - component: {fileID: 1251479883}
   - component: {fileID: 1251479882}
   - component: {fileID: 1251479884}
-  m_Layer: 12
+  m_Layer: 3
   m_Name: PerfectRock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -24974,7 +25022,7 @@ Transform:
   m_GameObject: {fileID: 1593533181}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -103.6, y: -6.74, z: 0}
+  m_LocalPosition: {x: -108.4, y: -6.74, z: 0}
   m_LocalScale: {x: 1.7208664, y: 1.4710081, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

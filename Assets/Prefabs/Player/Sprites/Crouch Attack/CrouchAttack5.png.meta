@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 75d8d14cf6b43ae4a8452e8f6b523852
+guid: d4393b8a3f9fae341a68a1b876990ed1
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3292716584734900687
-    second: Crouch1_0
+      213: 8834496061677716379
+    second: CrouchAttack5_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -49,8 +49,8 @@ TextureImporter:
   spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
-  alignment: 7
-  spritePivot: {x: 0.5, y: 0.5}
+  alignment: 9
+  spritePivot: {x: 0.3403668, y: 0}
   spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -96,30 +96,17 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
-    buildTarget: WebGL
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Crouch1_0
+      name: CrouchAttack5_0
       rect:
         serializedVersion: 2
-        x: 83
-        y: 54
-        width: 353
-        height: 333
+        x: 138
+        y: 69
+        width: 442
+        height: 327
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: fc1492bc94412bd20800000000000000
-      internalID: 3292716584734900687
+      spriteID: b9343e56c5f6a9a70800000000000000
+      internalID: 8834496061677716379
       vertices: []
       indices: 
       edges: []
@@ -148,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Crouch1_0: 3292716584734900687
+      CrouchAttack5_0: 8834496061677716379
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

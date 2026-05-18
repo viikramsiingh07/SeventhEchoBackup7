@@ -17,6 +17,7 @@ public class PlayerHealth : MonoBehaviour
 
     private Rigidbody2D rb;
     private bool isKnocked;
+    private bool isDead;
 
     void Start()
     {
@@ -33,6 +34,7 @@ public class PlayerHealth : MonoBehaviour
     public void TakeDamage(int damage, Vector2 hitDirection)
     {
         if (isKnocked) return;
+        if (isDead) return;
 
         currentHealth -= damage;
         Debug.Log("Player Hit! Health: " + currentHealth);
@@ -71,6 +73,9 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
+        if (isDead) return;
+        isDead = true;
+
         Debug.Log("Player Dead");
 
         Animator anim = GetComponentInChildren<Animator>();
@@ -84,7 +89,10 @@ public class PlayerHealth : MonoBehaviour
         if (rb != null)
         {
             rb.linearVelocity = Vector2.zero;
-            rb.bodyType = RigidbodyType2D.Kinematic;
+            // Keep Dynamic so gravity pulls body to ground
+            rb.gravityScale = 3f;
+            // Only freeze rotation so body doesnt spin
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         }
     }
 }

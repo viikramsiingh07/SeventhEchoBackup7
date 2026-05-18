@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: afa606cc455c3924d8f20c942d23baa9
+guid: d3a3488c6da6c074fa311f712f93cda4
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1366553250800853252
-    second: CrouchAttack1_0
+      213: -705172551469343333
+    second: CrouchAttack6_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -50,7 +50,7 @@ TextureImporter:
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 9
-  spritePivot: {x: 0.32, y: 0.03252015}
+  spritePivot: {x: 0.3403668, y: 0}
   spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -96,40 +96,27 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
-    buildTarget: WebGL
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: CrouchAttack1_0
+      name: CrouchAttack6_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 67
-        width: 352
-        height: 356
+        x: 138
+        y: 69
+        width: 442
+        height: 327
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: cfe1c570f07090de0800000000000000
-      internalID: -1366553250800853252
+      spriteID: b9d5054fc49b636f0800000000000000
+      internalID: -705172551469343333
       vertices: []
       indices: 
       edges: []
@@ -139,7 +126,7 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 1537655665
+    internalID: 0
     vertices: []
     indices: 
     edges: []
@@ -148,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      CrouchAttack1_0: -1366553250800853252
+      CrouchAttack6_0: -705172551469343333
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
