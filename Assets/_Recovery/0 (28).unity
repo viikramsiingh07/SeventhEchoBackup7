@@ -10165,8 +10165,8 @@ Transform:
   m_GameObject: {fileID: 1042028294}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -93.9, y: -60.5, z: 0}
-  m_LocalScale: {x: 1.9775116, y: 3.2071, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -10221,7 +10221,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -89.9, y: -61.24}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -10231,7 +10231,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 300, y: 80}
+  m_Size: {x: 600, y: 249.08}
   m_EdgeRadius: 0
 --- !u!1 &1056340286
 GameObject:
@@ -10811,9 +10811,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 839102c7e94b47a4cbcf6647afa99fae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  moveSpeed: 9.8
+  moveSpeed: 9
   jumpForce: 20
-  fallMultiplier: 6.22
+  fallMultiplier: 3.5
   jumpCutMultiplier: 4
   apexDownBoost: 0.5
   airControlLerp: 0.327
@@ -10833,7 +10833,6 @@ MonoBehaviour:
   noFrictionMaterial: {fileID: 6200000, guid: 355288aa491e71b40aca3277cb8df995, type: 2}
   attackTrigger: attack
   lockMovementDuringAttack: 1
-  lockMovementDuringBlock: 1
   didJumpBool: didJump
   dashSpeed: 16
   dashMinDuration: 0.3

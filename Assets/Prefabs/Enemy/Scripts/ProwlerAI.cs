@@ -64,6 +64,15 @@ public class ProwlerAI : MonoBehaviour
         }
     }
 
+    bool IsPlayerInFacingDirection()
+    {
+        if (player == null || graphics == null) return false;
+        float dirToPlayer = player.position.x - GetSpritePosition().x;
+        bool facingRight = graphics.localScale.x > 0;
+        bool playerIsRight = dirToPlayer > 0;
+        return facingRight == playerIsRight;
+    }
+
     float GetDistanceToPlayer()
     {
         if (player == null) return float.MaxValue;
@@ -77,26 +86,39 @@ public class ProwlerAI : MonoBehaviour
         if (attackCoroutineRunning) return;
 
         float dist = GetDistanceToPlayer();
+        bool canSeePlayer = IsPlayerInFacingDirection();
 
-        if (dist <= attackRange && Time.time > lastAttackTime + attackCooldown)
+        // ── WITHIN ATTACK RANGE ───────────────────────────────────────────
+        // Always react regardless of facing — turn and attack/cooldown
+        if (dist <= attackRange)
         {
-            currentState = State.Attack;
-            StartCoroutine(AttackSequence());
+            FacePlayer(); // always turn to face when close
+
+            if (Time.time > lastAttackTime + attackCooldown)
+            {
+                currentState = State.Attack;
+                StartCoroutine(AttackSequence());
+            }
+            else
+            {
+                currentState = State.Cooldown;
+            }
         }
-        else if (dist <= attackRange)
-        {
-            currentState = State.Cooldown;
-            FacePlayer();
-        }
-        else if (dist <= detectionRange)
+        // ── OUTSIDE ATTACK RANGE — facing-only detection ──────────────────
+        else if (canSeePlayer && dist <= detectionRange)
         {
             currentState = State.Chase;
             FacePlayer();
         }
+        // ── OUT OF RANGE OR BEHIND — patrol normally ──────────────────────
         else
         {
             currentState = State.Patrol;
         }
+
+        // Keep isWalking animator in sync
+        if (animator != null)
+            animator.SetBool("isWalking", currentState == State.Patrol || currentState == State.Chase);
     }
 
     void FixedUpdate()
@@ -148,7 +170,6 @@ public class ProwlerAI : MonoBehaviour
             wasAtEdge = false;
         }
 
-        // FIXED: removed * -1f
         rb.linearVelocity = new Vector2(direction * walkSpeed, rb.linearVelocity.y);
         UpdateFacing();
     }
@@ -168,7 +189,6 @@ public class ProwlerAI : MonoBehaviour
             return;
         }
 
-        // FIXED: removed * -1f
         rb.linearVelocity = new Vector2(rawDir * chaseSpeed, rb.linearVelocity.y);
         FacePlayer();
     }
@@ -178,17 +198,20 @@ public class ProwlerAI : MonoBehaviour
         attackCoroutineRunning = true;
         lastAttackTime = Time.time;
 
+        // Hard stop before attacking
+        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+
         if (animator != null)
         {
+            animator.SetBool("isWalking", false);
             animator.speed = 1f;
-            animator.SetBool("isAttacking", true);
+            animator.SetTrigger("Attack");
         }
 
-        yield return new WaitForSeconds(0.15f);
+        yield return new WaitForSeconds(0.1f);
 
         float prowlerX = GetSpritePosition().x;
         float playerX = player.position.x;
-        // FIXED: direction towards player (no -1 inversion)
         float rawDir = prowlerX > playerX ? -1f : 1f;
         leapVelocity = rawDir * leapSpeed;
 
@@ -212,16 +235,22 @@ public class ProwlerAI : MonoBehaviour
             yield return null;
         }
 
+        // Hard stop — kills ALL velocity, no sliding
         isLeaping = false;
         leapVelocity = 0f;
-        rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        rb.linearVelocity = Vector2.zero;
 
-        yield return new WaitForSeconds(0.6f);
+        yield return new WaitForSeconds(0.5f);
 
+        // Force back to crawl animation cleanly
         if (animator != null)
-            animator.SetBool("isAttacking", false);
+        {
+            animator.ResetTrigger("Attack");
+            animator.Play("ProwlerCrawl", 0, 0f);
+            animator.SetBool("isWalking", true);
+        }
 
-        yield return new WaitForSeconds(attackCooldown);
+        yield return new WaitForSeconds(0.1f);
 
         attackCoroutineRunning = false;
         currentState = State.Patrol;
@@ -233,7 +262,6 @@ public class ProwlerAI : MonoBehaviour
         float dir = player.position.x - GetSpritePosition().x;
         if (Mathf.Abs(dir) < 0.01f) return;
         Vector3 s = graphics.localScale;
-        // FIXED: removed inversion, now faces correctly towards player
         s.x = Mathf.Abs(s.x) * (dir > 0 ? 1 : -1);
         graphics.localScale = s;
     }
@@ -243,7 +271,6 @@ public class ProwlerAI : MonoBehaviour
         if (graphics == null) return;
         float actualDir = GetActualDirection();
         Vector3 s = graphics.localScale;
-        // FIXED: removed inversion, now faces correctly in movement direction
         s.x = Mathf.Abs(s.x) * (actualDir > 0 ? 1 : -1);
         graphics.localScale = s;
     }

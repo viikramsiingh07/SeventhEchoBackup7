@@ -68,14 +68,15 @@
     <Compile Include="Assets\Prefabs\Enemy\Scripts\StalkerAI.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\ParallaxLayer.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\GhostTrail.cs" />
+    <Compile Include="Assets\Prefabs\Player\Scripts\WindZone.cs" />
     <Compile Include="Assets\Prefabs\Enemy\Scripts\StalkerHealth.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\PlayerHealth.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\CameraDown.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\RestoreCamera.cs" />
+    <Compile Include="Assets\Prefabs\Player\Scripts\DreamWind.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\OneWayCloudPlatform.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\StepDownPlatform.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\HealthUI.cs" />
-    <Compile Include="Assets\Prefabs\Player\Scripts\windscript.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\PlayerInputActions.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\MovingPlatform.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\CameraFollowXY.cs" />
