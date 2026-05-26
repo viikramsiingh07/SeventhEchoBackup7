@@ -37,27 +37,15 @@ public class PlayerMovement : MonoBehaviour
     [Header("Physics Material")]
     public PhysicsMaterial2D noFrictionMaterial;
 
-    [Header("Attack")]
-    public string attackTrigger = "attack";
-    public bool lockMovementDuringAttack = true;
-
-    [Header("Block")]
-    public bool lockMovementDuringBlock = true;
-
-    [Header("Vertical Attack")]
-    public string verticalAttackTrigger = "verticalAttack";
-    [Tooltip("Normalized time (0-1) at which hold-V freezes the animation. Tune per spritesheet: 6fr=0.16  8fr=0.12  10fr=0.10  12fr=0.08")]
-    public float verticalAttackHoldFrameTime = 0.08f;
-
-    [Header("Animator")]
-    public string didJumpBool = "didJump";
-
     [Header("Dash")]
     public float dashSpeed = 18f;
     public float dashMinDuration = 0.4f;
     public float dashCooldown = 0.8f;
     public float doubleTapWindow = 0.25f;
     public float dashParticleVelocityX = 15f;
+
+    [Header("Animator")]
+    public string didJumpBool = "didJump";
 
     [Header("Debug")]
     public bool debugGround = false;
@@ -69,24 +57,17 @@ public class PlayerMovement : MonoBehaviour
     private Transform graphics;
     private PlayerInputActions input;
     private ParticleSystem dashParticles;
+    private PlayerAttack playerAttack;
 
     // ── Input flags ──
     private Vector2 moveInput;
     private bool jumpPressed;
     private bool jumpHeld;
     private bool crouchHeld;
-    private bool attackPressed;
-    private bool blockHeld;
-    private bool verticalAttackPressed;
-    private bool verticalAttackHeld;
 
     // ── State ──
     private bool isGrounded;
     private bool didJump;
-    private bool isAttacking;
-    private bool isVerticalAttacking;
-    private bool isVerticalAttackHolding;
-    private bool isBlocking;
     private float lastGroundedTime;
 
     // ── Ground tracking ──
@@ -109,8 +90,12 @@ public class PlayerMovement : MonoBehaviour
 
     // ── Public accessors ──
     public bool IsGrounded => isGrounded;
-    public bool IsBlocking => isBlocking;
-    public bool IsVerticalAttacking => isVerticalAttacking;
+    public bool IsDashing => isDashing;
+    public bool IsCrouching => crouchHeld && isGrounded;
+    public bool DidJump => didJump;
+    public float MoveInputX => moveInput.x;
+    public Vector2 Velocity => rb != null ? rb.linearVelocity : Vector2.zero;
+    public Vector2 GroundVelocity => currentGroundVelocity;
 
     // ═══════════════════════════════════════════
     //  LIFECYCLE
@@ -118,12 +103,14 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        rb      = GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>();
         capsule = GetComponent<CapsuleCollider2D>();
 
         animator = GetComponent<Animator>();
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
+
+        playerAttack = GetComponent<PlayerAttack>();
 
         Transform graphicsChild = transform.Find("Graphics");
         if (graphicsChild != null)
@@ -157,62 +144,29 @@ public class PlayerMovement : MonoBehaviour
         input.Player.Enable();
 
         input.Player.Move.performed += OnMove;
-        input.Player.Move.canceled  += OnMoveCancel;
+        input.Player.Move.canceled += OnMoveCancel;
 
         input.Player.Jump.performed += OnJump;
-        input.Player.Jump.canceled  += OnJumpCancel;
+        input.Player.Jump.canceled += OnJumpCancel;
 
         input.Player.Crouch.performed += OnCrouch;
-        input.Player.Crouch.canceled  += OnCrouchCancel;
-
-        try { input.Player.Attack.performed += OnAttack; } catch { }
-
-        try
-        {
-            input.Player.Block.performed += OnBlockPerformed;
-            input.Player.Block.canceled  += OnBlockCanceled;
-        }
-        catch { }
-
-        try
-        {
-            input.Player.VerticalAttack.performed += OnVerticalAttack;
-            input.Player.VerticalAttack.canceled  += OnVerticalAttackCanceled;
-        }
-        catch { }
+        input.Player.Crouch.canceled += OnCrouchCancel;
     }
 
     private void OnDisable()
     {
         input.Player.Move.performed -= OnMove;
-        input.Player.Move.canceled  -= OnMoveCancel;
+        input.Player.Move.canceled -= OnMoveCancel;
 
         input.Player.Jump.performed -= OnJump;
-        input.Player.Jump.canceled  -= OnJumpCancel;
+        input.Player.Jump.canceled -= OnJumpCancel;
 
         input.Player.Crouch.performed -= OnCrouch;
-        input.Player.Crouch.canceled  -= OnCrouchCancel;
-
-        try { input.Player.Attack.performed -= OnAttack; } catch { }
-
-        try
-        {
-            input.Player.Block.performed -= OnBlockPerformed;
-            input.Player.Block.canceled  -= OnBlockCanceled;
-        }
-        catch { }
-
-        try
-        {
-            input.Player.VerticalAttack.performed -= OnVerticalAttack;
-            input.Player.VerticalAttack.canceled  -= OnVerticalAttackCanceled;
-        }
-        catch { }
+        input.Player.Crouch.canceled -= OnCrouchCancel;
 
         input.Player.Disable();
     }
 
-    // ── Phantom walk fix ──
     private void OnApplicationFocus(bool hasFocus)
     {
         if (!hasFocus) ClearAllInput();
@@ -220,31 +174,22 @@ public class PlayerMovement : MonoBehaviour
 
     private void ClearAllInput()
     {
-        moveInput               = Vector2.zero;
-        jumpPressed             = false;
-        jumpHeld                = false;
-        crouchHeld              = false;
-        attackPressed           = false;
-        blockHeld               = false;
-        verticalAttackPressed   = false;
-        verticalAttackHeld      = false;
-        isVerticalAttackHolding = false;
-        prevRightHeld           = false;
-        prevLeftHeld            = false;
-
-        // Safety: always restore animator speed on focus loss
-        if (animator != null)
-            animator.speed = 1f;
+        moveInput = Vector2.zero;
+        jumpPressed = false;
+        jumpHeld = false;
+        crouchHeld = false;
+        prevRightHeld = false;
+        prevLeftHeld = false;
     }
 
     // ═══════════════════════════════════════════
-    //  UPDATE — double tap dash detection
+    //  UPDATE
     // ═══════════════════════════════════════════
 
     private void Update()
     {
         bool rightHeld = moveInput.x > 0.5f;
-        bool leftHeld  = moveInput.x < -0.5f;
+        bool leftHeld = moveInput.x < -0.5f;
 
         if (rightHeld && !prevRightHeld)
         {
@@ -263,7 +208,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         prevRightHeld = rightHeld;
-        prevLeftHeld  = leftHeld;
+        prevLeftHeld = leftHeld;
     }
 
     // ═══════════════════════════════════════════
@@ -274,22 +219,6 @@ public class PlayerMovement : MonoBehaviour
     {
         CheckGrounded();
 
-        // ── Resolve attack states from animator ──
-        if (animator != null)
-        {
-            AnimatorStateInfo st = animator.GetCurrentAnimatorStateInfo(0);
-            isVerticalAttacking = st.IsName("VerticalAttack");
-            isAttacking         = st.IsName("Attack") || st.IsName("SitAttack") || isVerticalAttacking;
-        }
-        else
-        {
-            isAttacking         = false;
-            isVerticalAttacking = false;
-        }
-
-        // Blocking: only grounded, not attacking, not dashing
-        isBlocking = blockHeld && isGrounded && !isAttacking && !isDashing;
-
         if (dashCooldownRemaining > 0f)
             dashCooldownRemaining = Mathf.Max(0f, dashCooldownRemaining - Time.fixedDeltaTime);
 
@@ -297,13 +226,9 @@ public class PlayerMovement : MonoBehaviour
         HandleMovement();
         HandleJump();
         ApplyBetterGravity();
-        HandleAttack();
         UpdateAnimator();
 
-        // Clear one-shot flags AFTER everything has consumed them
-        jumpPressed           = false;
-        attackPressed         = false;
-        verticalAttackPressed = false;
+        jumpPressed = false;
     }
 
     // ═══════════════════════════════════════════
@@ -316,12 +241,14 @@ public class PlayerMovement : MonoBehaviour
         if (!isGrounded) return;
         if (dashCooldownRemaining > 0f) return;
         if (crouchHeld) return;
-        if (lockMovementDuringAttack && isAttacking) return;
-        if (lockMovementDuringBlock && blockHeld) return;
 
-        dashDirection         = dir;
-        isDashing             = true;
-        dashTimeRemaining     = dashMinDuration;
+        // Ask PlayerAttack if it's safe to dash
+        if (playerAttack != null && playerAttack.IsAttacking) return;
+        if (playerAttack != null && playerAttack.IsBlocking) return;
+
+        dashDirection = dir;
+        isDashing = true;
+        dashTimeRemaining = dashMinDuration;
         dashCooldownRemaining = dashCooldown;
 
         if (dashParticles != null)
@@ -339,8 +266,8 @@ public class PlayerMovement : MonoBehaviour
     {
         if (!isDashing) return;
 
-        // Stop dash immediately if attack or vertical attack fires
-        if (isAttacking)
+        // Stop dash immediately if attack fires
+        if (playerAttack != null && playerAttack.IsAttacking)
         {
             isDashing = false;
             dashTimeRemaining = 0f;
@@ -378,11 +305,11 @@ public class PlayerMovement : MonoBehaviour
     {
         if (capsule == null)
         {
-            isGrounded             = false;
-            groundNormal           = Vector2.up;
-            currentGroundCollider  = null;
+            isGrounded = false;
+            groundNormal = Vector2.up;
+            currentGroundCollider = null;
             currentGroundRigidbody = null;
-            currentGroundVelocity  = Vector2.zero;
+            currentGroundVelocity = Vector2.zero;
             return;
         }
 
@@ -401,17 +328,17 @@ public class PlayerMovement : MonoBehaviour
         if (validSurface)
         {
             Vector2 hitGroundVelocity = GetGroundVelocity(hit.collider, hit.rigidbody);
-            float relativeY           = rb.linearVelocity.y - hitGroundVelocity.y;
+            float relativeY = rb.linearVelocity.y - hitGroundVelocity.y;
 
             if (relativeY <= jumpGroundedMaxRelativeYSpeed)
             {
-                isGrounded             = true;
-                lastGroundedTime       = Time.time;
-                didJump                = false;
-                groundNormal           = hit.normal;
-                currentGroundCollider  = hit.collider;
+                isGrounded = true;
+                lastGroundedTime = Time.time;
+                didJump = false;
+                groundNormal = hit.normal;
+                currentGroundCollider = hit.collider;
                 currentGroundRigidbody = hit.rigidbody;
-                currentGroundVelocity  = hitGroundVelocity;
+                currentGroundVelocity = hitGroundVelocity;
 
                 if (debugGround)
                     Debug.Log($"[GROUND] grounded=true hit={hit.collider.name} dist={hit.distance:F4} normal={hit.normal} playerVy={rb.linearVelocity.y:F3} groundVy={currentGroundVelocity.y:F3} relY={relativeY:F3}", this);
@@ -421,17 +348,17 @@ public class PlayerMovement : MonoBehaviour
         }
 
         float relativeYDuringGrace = rb.linearVelocity.y - currentGroundVelocity.y;
-        bool  withinGrace          = (Time.time - lastGroundedTime) <= groundedGraceTime;
+        bool withinGrace = (Time.time - lastGroundedTime) <= groundedGraceTime;
         isGrounded = withinGrace && relativeYDuringGrace <= coyoteGroundedMaxRelativeYSpeed;
 
         if (isGrounded)
             didJump = false;
         else
         {
-            groundNormal           = Vector2.up;
-            currentGroundCollider  = null;
+            groundNormal = Vector2.up;
+            currentGroundCollider = null;
             currentGroundRigidbody = null;
-            currentGroundVelocity  = Vector2.zero;
+            currentGroundVelocity = Vector2.zero;
         }
 
         if (debugGround)
@@ -439,7 +366,7 @@ public class PlayerMovement : MonoBehaviour
             if (hit.collider != null)
             {
                 Vector2 hgv = GetGroundVelocity(hit.collider, hit.rigidbody);
-                float relY  = rb.linearVelocity.y - hgv.y;
+                float relY = rb.linearVelocity.y - hgv.y;
                 Debug.Log($"[GROUND] grounded={isGrounded} hit={hit.collider.name} dist={hit.distance:F4} normal={hit.normal} playerVy={rb.linearVelocity.y:F3} groundVy={hgv.y:F3} relY={relY:F3}", this);
             }
             else
@@ -472,13 +399,16 @@ public class PlayerMovement : MonoBehaviour
     {
         if (isDashing) return;
 
-        if (lockMovementDuringBlock && isBlocking)
+        bool attacking = playerAttack != null && playerAttack.IsAttacking;
+        bool blocking = playerAttack != null && playerAttack.IsBlocking;
+
+        if (blocking)
         {
             rb.linearVelocity = new Vector2(currentGroundVelocity.x, rb.linearVelocity.y);
             return;
         }
 
-        if (lockMovementDuringAttack && isAttacking)
+        if (attacking)
         {
             rb.linearVelocity = new Vector2(currentGroundVelocity.x, rb.linearVelocity.y);
             return;
@@ -496,7 +426,7 @@ public class PlayerMovement : MonoBehaviour
 
             if (stopSlidingWhenIdle && rawX == 0f)
             {
-                Vector2 tangent    = new Vector2(groundNormal.y, -groundNormal.x).normalized;
+                Vector2 tangent = new Vector2(groundNormal.y, -groundNormal.x).normalized;
                 float tangentSpeed = Vector2.Dot(rb.linearVelocity - currentGroundVelocity, tangent);
                 rb.linearVelocity -= tangent * tangentSpeed;
 
@@ -528,30 +458,34 @@ public class PlayerMovement : MonoBehaviour
     private void HandleJump()
     {
         if (!jumpPressed) return;
-        if (isBlocking) return;
+
+        bool blocking = playerAttack != null && playerAttack.IsBlocking;
+        bool attacking = playerAttack != null && playerAttack.IsAttacking;
+
+        if (blocking) return;
 
         if (isDashing)
         {
-            isDashing         = false;
+            isDashing = false;
             dashTimeRemaining = 0f;
             if (dashParticles != null) dashParticles.Stop();
         }
 
-        float relativeY   = rb.linearVelocity.y - currentGroundVelocity.y;
-        bool  withinGrace  = (Time.time - lastGroundedTime) <= groundedGraceTime;
-        bool  canUseCoyote = withinGrace && relativeY <= coyoteGroundedMaxRelativeYSpeed;
+        float relativeY = rb.linearVelocity.y - currentGroundVelocity.y;
+        bool withinGrace = (Time.time - lastGroundedTime) <= groundedGraceTime;
+        bool canUseCoyote = withinGrace && relativeY <= coyoteGroundedMaxRelativeYSpeed;
 
         if (!(isGrounded || canUseCoyote)) return;
         if (crouchHeld) return;
-        if (lockMovementDuringAttack && isAttacking) return;
+        if (attacking) return;
 
-        rb.linearVelocity      = new Vector2(rb.linearVelocity.x, jumpForce);
-        isGrounded             = false;
-        didJump                = true;
-        currentGroundCollider  = null;
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        isGrounded = false;
+        didJump = true;
+        currentGroundCollider = null;
         currentGroundRigidbody = null;
-        currentGroundVelocity  = Vector2.zero;
-        groundNormal           = Vector2.up;
+        currentGroundVelocity = Vector2.zero;
+        groundNormal = Vector2.up;
     }
 
     // ═══════════════════════════════════════════
@@ -571,64 +505,6 @@ public class PlayerMovement : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════
-    //  ATTACK
-    // ═══════════════════════════════════════════
-
-    private void HandleAttack()
-    {
-        if (animator == null) return;
-        if (isBlocking) return;
-
-        // ── Vertical attack hold/resume logic ──
-        if (isVerticalAttacking)
-        {
-            AnimatorStateInfo st = animator.GetCurrentAnimatorStateInfo(0);
-            float normalizedTime = st.normalizedTime % 1f;
-
-            // Only allow freeze if:
-            // 1. V is held
-            // 2. Animation hasn't passed frame 2 yet
-            // 3. We haven't already frozen and resumed once this attack
-            if (verticalAttackHeld &&
-                normalizedTime >= verticalAttackHoldFrameTime &&
-                normalizedTime < verticalAttackHoldFrameTime + 0.05f && // tight window around frame 2 only
-                !isVerticalAttackHolding)
-            {
-                animator.speed = 0f;
-                isVerticalAttackHolding = true;
-            }
-
-            // V released — resume
-            if (isVerticalAttackHolding && !verticalAttackHeld)
-            {
-                animator.speed = 1f;
-                isVerticalAttackHolding = false;
-            }
-
-            return;
-        }
-
-        // Safety: restore animator speed if state already exited
-        if (animator.speed == 0f)
-            animator.speed = 1f;
-
-        if (isAttacking) return;
-
-        // Vertical attack has priority over normal attack
-        if (verticalAttackPressed)
-        {
-            animator.ResetTrigger(verticalAttackTrigger);
-            animator.SetTrigger(verticalAttackTrigger);
-            attackPressed = false;
-            return;
-        }
-
-        if (!attackPressed) return;
-        animator.ResetTrigger(attackTrigger);
-        animator.SetTrigger(attackTrigger);
-    }
-
-    // ═══════════════════════════════════════════
     //  ANIMATOR
     // ═══════════════════════════════════════════
 
@@ -639,18 +515,18 @@ public class PlayerMovement : MonoBehaviour
         AnimatorStateInfo st = animator.GetCurrentAnimatorStateInfo(0);
         if (st.IsName("Death")) return;
 
+        bool attacking = playerAttack != null && playerAttack.IsAttacking;
+        bool blocking = playerAttack != null && playerAttack.IsBlocking;
         bool isCrouching = crouchHeld && isGrounded;
-        bool allowRun    = !(lockMovementDuringAttack && isAttacking) && !isBlocking;
-        bool isRunning   = allowRun && Mathf.Abs(moveInput.x) > 0.1f && isGrounded && !isCrouching;
+        bool allowRun = !attacking && !blocking;
+        bool isRunning = allowRun && Mathf.Abs(moveInput.x) > 0.1f && isGrounded && !isCrouching;
 
-        SetAnimatorBoolIfExists("isGrounded",          isGrounded);
-        SetAnimatorBoolIfExists("isCrouching",         isCrouching);
-        SetAnimatorBoolIfExists("isRunning",           isRunning);
-        SetAnimatorBoolIfExists("isBlocking",          isBlocking);
-        SetAnimatorBoolIfExists("isVerticalAttacking", isVerticalAttacking);
-        SetAnimatorBoolIfExists("isDashing",           isDashing);
-        SetAnimatorBoolIfExists(didJumpBool,           didJump);
-        SetAnimatorFloatIfExists("yVelocity",          rb.linearVelocity.y);
+        SetAnimatorBoolIfExists("isGrounded", isGrounded);
+        SetAnimatorBoolIfExists("isCrouching", isCrouching);
+        SetAnimatorBoolIfExists("isRunning", isRunning);
+        SetAnimatorBoolIfExists("isDashing", isDashing);
+        SetAnimatorBoolIfExists(didJumpBool, didJump);
+        SetAnimatorFloatIfExists("yVelocity", rb.linearVelocity.y);
     }
 
     private void SetAnimatorBoolIfExists(string param, bool value)
@@ -685,38 +561,14 @@ public class PlayerMovement : MonoBehaviour
     //  INPUT CALLBACKS
     // ═══════════════════════════════════════════
 
-    private void OnMove(InputAction.CallbackContext ctx)         => moveInput = ctx.ReadValue<Vector2>();
-    private void OnMoveCancel(InputAction.CallbackContext ctx)   => moveInput = Vector2.zero;
+    private void OnMove(InputAction.CallbackContext ctx) => moveInput = ctx.ReadValue<Vector2>();
+    private void OnMoveCancel(InputAction.CallbackContext ctx) => moveInput = Vector2.zero;
 
-    private void OnJump(InputAction.CallbackContext ctx)         { jumpPressed = true; jumpHeld = true; }
-    private void OnJumpCancel(InputAction.CallbackContext ctx)   => jumpHeld = false;
+    private void OnJump(InputAction.CallbackContext ctx) { jumpPressed = true; jumpHeld = true; }
+    private void OnJumpCancel(InputAction.CallbackContext ctx) => jumpHeld = false;
 
-    private void OnCrouch(InputAction.CallbackContext ctx)       => crouchHeld = true;
+    private void OnCrouch(InputAction.CallbackContext ctx) => crouchHeld = true;
     private void OnCrouchCancel(InputAction.CallbackContext ctx) => crouchHeld = false;
-
-    private void OnAttack(InputAction.CallbackContext ctx)
-    {
-        attackPressed = true;
-        if (animator != null && !isAttacking && !isBlocking)
-        {
-            animator.ResetTrigger(attackTrigger);
-            animator.SetTrigger(attackTrigger);
-        }
-    }
-
-    private void OnBlockPerformed(InputAction.CallbackContext ctx) => blockHeld = true;
-    private void OnBlockCanceled(InputAction.CallbackContext ctx)  => blockHeld = false;
-
-    private void OnVerticalAttack(InputAction.CallbackContext ctx)
-    {
-        verticalAttackPressed = true;
-        verticalAttackHeld    = true;
-    }
-
-    private void OnVerticalAttackCanceled(InputAction.CallbackContext ctx)
-    {
-        verticalAttackHeld = false;
-    }
 
     // ═══════════════════════════════════════════
     //  EDITOR GIZMOS

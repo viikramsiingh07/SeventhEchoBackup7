@@ -1,84 +1,83 @@
 // ============================================================
-//  DreamWindVFX.cs  –  Seventh Echo  (v2 — fixed)
-//
-//  Changes from v1:
-//  - Streaks spawn from taller edge, cover full screen height
-//  - Dream Mist uses software alpha instead of broken URP shader
-//  - All large square artifacts removed
-//  - Softer, wider, more cinematic feel
+//  DreamWindVFX.cs  –  Seventh Echo
+//  Dark Cold Dream — Built-in Pipeline — Camera Size ~9.6
 // ============================================================
 using UnityEngine;
 
 public class DreamWindVFX : MonoBehaviour
 {
-    // ── Singleton ─────────────────────────────────────────────
     public static DreamWindVFX Instance { get; private set; }
 
-    // ── References ────────────────────────────────────────────
     [Header("Player")]
     public Transform player;
     public Rigidbody2D playerRb;
 
-    // ── Wind tuning ───────────────────────────────────────────
     [Header("Wind Feel")]
-    public float baseWindSpeed = 4f;
+    public float baseWindSpeed = 5f;
     [Range(0f, 1f)]
-    public float playerSpeedInfluence = 0.3f;
+    public float playerSpeedInfluence = 0.25f;
 
     [Header("Gust Timing")]
-    public float gustIntervalMin = 5f;
-    public float gustIntervalMax = 12f;
-    public float gustStrength = 5f;
-    public float gustDuration = 1.4f;
+    public float gustIntervalMin = 6f;
+    public float gustIntervalMax = 14f;
+    public float gustStrength = 6f;
+    public float gustDuration = 1.6f;
     public float dashSpeedThreshold = 14f;
 
-    // ── Particle systems ──────────────────────────────────────
-    private ParticleSystem _streaks;
-    private ParticleSystem _dustMotes;
-    private ParticleSystem _rockDebris;
-    private ParticleSystem _dreamMist;
+    // ── Particle Systems ──
+    private ParticleSystem _coldStreaks;
+    private ParticleSystem _dreamFireflies;
+    private ParticleSystem _iceMotes;
+    private ParticleSystem _voidMist;
 
     private ParticleSystem.VelocityOverLifetimeModule _streaksVel;
+    private ParticleSystem.VelocityOverLifetimeModule _firefliesVel;
     private ParticleSystem.VelocityOverLifetimeModule _motesVel;
-    private ParticleSystem.VelocityOverLifetimeModule _debrisVel;
 
-    // ── Fade ──────────────────────────────────────────────────
+    // ── Fade ──
     private float _alpha = 0f;
     private float _fadeTarget = 0f;
-    private float _fadeDur = 0.8f;
+    private float _fadeDur = 1f;
     private bool _fading = false;
 
-    // ── Gust ──────────────────────────────────────────────────
+    // ── Gust ──
     private float _gustTimer;
     private float _nextGust;
     private bool _gustActive;
     private float _gustCur;
     private float _gustTarget;
 
-    // ── Palette ───────────────────────────────────────────────
-    static readonly Color CStreak = new Color(0.88f, 0.95f, 1.00f);
-    static readonly Color CMote = new Color(0.78f, 0.68f, 1.00f);
-    static readonly Color CDebris = new Color(0.35f, 0.30f, 0.42f);
-    static readonly Color CMist = new Color(0.55f, 0.38f, 0.80f);
+    // ── Shared soft circle texture ──
+    private Texture2D _softCircleTex;
+
+    // ── Cold Dream Palette ──
+    static readonly Color CColdStreak = new Color(0.72f, 0.88f, 1.00f);
+    static readonly Color CFirefly = new Color(0.60f, 0.95f, 1.00f);
+    static readonly Color CIceMote = new Color(0.85f, 0.93f, 1.00f);
+    static readonly Color CVoidMist = new Color(0.20f, 0.15f, 0.35f);
 
     const float AStreak = 0.55f;
-    const float AMote = 0.65f;
-    const float ADebris = 0.40f;
-    const float AMist = 0.18f;
+    const float AFirefly = 1.0f;
+    const float AMote = 0.80f;
+    const float AVoid = 0.35f;
 
-    // ─────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════
+    //  LIFECYCLE
+    // ═══════════════════════════════════════════
+
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+        _softCircleTex = CreateSoftCircleTexture(64);
     }
 
     void Start()
     {
-        BuildStreaks();
-        BuildDustMotes();
-        BuildRockDebris();
-        BuildDreamMist();
+        BuildColdStreaks();
+        BuildDreamFireflies();
+        BuildIceMotes();
+        BuildVoidMist();
         SetAllAlpha(0f);
         _nextGust = Random.Range(gustIntervalMin, gustIntervalMax);
     }
@@ -93,229 +92,301 @@ public class DreamWindVFX : MonoBehaviour
 
     void LateUpdate()
     {
-        Follow(_dustMotes);
-        Follow(_rockDebris);
-        Follow(_dreamMist);
+        Follow(_dreamFireflies);
+        Follow(_iceMotes);
+        Follow(_voidMist);
     }
 
     void Follow(ParticleSystem ps)
     {
         if (ps == null || player == null) return;
         Vector3 t = new Vector3(player.position.x, player.position.y, 0f);
-        ps.transform.position = Vector3.Lerp(ps.transform.position, t, Time.deltaTime * 5f);
+        ps.transform.position = Vector3.Lerp(ps.transform.position, t, Time.deltaTime * 4f);
     }
 
-    // ══ LAYER 1 — WIND STREAKS ════════════════════════════════
-    void BuildStreaks()
+    // ═══════════════════════════════════════════
+    //  LAYER 1 — COLD WIND STREAKS
+    // ═══════════════════════════════════════════
+
+    void BuildColdStreaks()
     {
-        _streaks = Make("WindStreaks");
-        var m = _streaks.main;
-        m.duration = 5f;
+        _coldStreaks = Make("ColdStreaks");
+        _coldStreaks.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        var m = _coldStreaks.main;
+        m.duration = 6f;
         m.loop = true;
-        m.startLifetime = Rand(0.3f, 2.2f);      // wide range — some short snappy, some long lazy
-        m.startSpeed = Rand(4f, 20f);           // big speed variance — chaotic feel
-        m.startSize = Rand(0.008f, 0.06f);      // thin — hair-like streaks not rectangles
-        m.startColor = A(CStreak, AStreak);
+        m.startLifetime = Rand(0.4f, 1.8f);
+        m.startSpeed = Rand(8f, 22f);
+        m.startSize = Rand(0.04f, 0.18f);
+        m.startColor = A(CColdStreak, AStreak);
         m.simulationSpace = ParticleSystemSimulationSpace.World;
-        m.maxParticles = 300;
+        m.maxParticles = 250;
         m.gravityModifier = 0f;
 
-        var e = _streaks.emission;
-        e.rateOverTime = 80f;
+        var e = _coldStreaks.emission;
+        e.rateOverTime = 60f;
 
-        // Tall vertical edge far right — covers full screen height
-        var s = _streaks.shape;
+        var s = _coldStreaks.shape;
         s.enabled = true;
         s.shapeType = ParticleSystemShapeType.SingleSidedEdge;
-        s.radius = 14f;                           // even taller — covers screen top to bottom
-        s.position = new Vector3(16f, 0f, 0f);
+        s.radius = 22f;
+        s.position = new Vector3(22f, 0f, 0f);
         s.rotation = new Vector3(0f, 0f, 90f);
 
-        _streaksVel = _streaks.velocityOverLifetime;
+        _streaksVel = _coldStreaks.velocityOverLifetime;
         _streaksVel.enabled = true;
         _streaksVel.space = ParticleSystemSimulationSpace.World;
-        SetVelocity(_streaksVel, -8f, -20f, -1.2f, 1.2f);
+        SetVel(_streaksVel, -10f, -25f, -0.8f, 0.8f);
 
-        AlphaLife(_streaks, CStreak, new[] { 0f, 0.1f, 0.9f, 1f }, new[] { 0f, 1f, 0.8f, 0f });
+        AlphaLife(_coldStreaks, CColdStreak,
+            new[] { 0f, 0.05f, 0.85f, 1f },
+            new[] { 0f, 1f, 0.6f, 0f });
 
-        var n = _streaks.noise;
+        var n = _coldStreaks.noise;
         n.enabled = true;
-        n.strength = 1.2f;       // strong — streaks visibly curl and deviate
-        n.frequency = 0.5f;       // medium frequency — waves not tiny jitter
-        n.scrollSpeed = 0.4f;       // scrolls fast — constantly changing
-        n.octaveCount = 2;          // two layers of noise — more organic
-        n.octaveMultiplier = 0.5f;
+        n.strength = 0.6f;
+        n.frequency = 0.3f;
+        n.scrollSpeed = 0.5f;
+        n.octaveCount = 2;
         n.quality = ParticleSystemNoiseQuality.Medium;
 
-        var r = Rend(_streaks);
+        var r = Rend(_coldStreaks);
         r.renderMode = ParticleSystemRenderMode.Stretch;
-        r.velocityScale = 0.12f;    // longer stretch
-        r.lengthScale = 4.0f;     // much longer tails
-        r.sortingOrder = 3;
-        SetMat(r, CStreak, true);
+        r.velocityScale = 0.08f;
+        r.lengthScale = 6f;
+        r.sortingOrder = 5;
+        r.sortingLayerName = "Default";
 
-        _streaks.Play();
+        Shader sh = Shader.Find("Particles/Additive")
+                 ?? Shader.Find("Legacy Shaders/Particles/Additive")
+                 ?? Shader.Find("Sprites/Default");
+        if (sh != null)
+        {
+            var mat = new Material(sh);
+            mat.color = new Color(CColdStreak.r, CColdStreak.g, CColdStreak.b, 0.9f);
+            r.material = mat;
+        }
+
+        _coldStreaks.Play();
     }
 
-    // ══ LAYER 2 — DUST MOTES ══════════════════════════════════
-    void BuildDustMotes()
+    // ═══════════════════════════════════════════
+    //  LAYER 2 — DREAM FIREFLIES
+    // ═══════════════════════════════════════════
+
+    void BuildDreamFireflies()
     {
-        _dustMotes = Make("DustMotes");
-        var m = _dustMotes.main;
-        m.duration = 5f;
+        _dreamFireflies = Make("DreamFireflies");
+        _dreamFireflies.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        var m = _dreamFireflies.main;
+        m.duration = 6f;
         m.loop = true;
         m.startLifetime = Rand(3f, 7f);
-        m.startSpeed = Rand(0.05f, 0.5f);
-        m.startSize = Rand(0.02f, 0.07f);
-        m.startColor = A(CMote, AMote);
+        m.startSpeed = Rand(0.02f, 0.25f);
+        m.startSize = Rand(0.15f, 0.40f);
+        m.startColor = A(CFirefly, AFirefly);
         m.simulationSpace = ParticleSystemSimulationSpace.World;
-        m.maxParticles = 150;
-        m.gravityModifier = -0.015f;
+        m.maxParticles = 180;
+        m.gravityModifier = -0.006f;
 
-        var e = _dustMotes.emission;
-        e.rateOverTime = 16f;
+        var e = _dreamFireflies.emission;
+        e.rateOverTime = 22f;
 
-        var s = _dustMotes.shape;
+        var s = _dreamFireflies.shape;
         s.enabled = true;
         s.shapeType = ParticleSystemShapeType.Box;
-        s.scale = new Vector3(28f, 14f, 1f);
+        s.scale = new Vector3(40f, 22f, 1f);
 
-        _motesVel = _dustMotes.velocityOverLifetime;
-        _motesVel.enabled = true;
-        _motesVel.space = ParticleSystemSimulationSpace.World;
-        SetVelocity(_motesVel, -0.8f, -2.0f, -0.1f, 0.35f);
+        _firefliesVel = _dreamFireflies.velocityOverLifetime;
+        _firefliesVel.enabled = true;
+        _firefliesVel.space = ParticleSystemSimulationSpace.World;
+        SetVel(_firefliesVel, -0.1f, -0.4f, -0.06f, 0.06f);
 
-        AlphaLife(_dustMotes, CMote, new[] { 0f, 0.2f, 0.8f, 1f }, new[] { 0f, 1f, 1f, 0f });
-
-        var sOL = _dustMotes.sizeOverLifetime;
+        var sOL = _dreamFireflies.sizeOverLifetime;
         sOL.enabled = true;
-        var c = new AnimationCurve();
-        c.AddKey(0f, 0.2f);
-        c.AddKey(0.3f, 1.0f);
-        c.AddKey(0.8f, 0.7f);
-        c.AddKey(1f, 0.0f);
-        sOL.size = new ParticleSystem.MinMaxCurve(1f, c);
+        var sizeCurve = new AnimationCurve();
+        sizeCurve.AddKey(0f, 0f);
+        sizeCurve.AddKey(0.10f, 1f);
+        sizeCurve.AddKey(0.25f, 0.2f);
+        sizeCurve.AddKey(0.40f, 0.9f);
+        sizeCurve.AddKey(0.55f, 0.15f);
+        sizeCurve.AddKey(0.70f, 0.8f);
+        sizeCurve.AddKey(0.85f, 0.1f);
+        sizeCurve.AddKey(1f, 0f);
+        sOL.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
 
-        var n = _dustMotes.noise;
+        var col = _dreamFireflies.colorOverLifetime;
+        col.enabled = true;
+        var g = new Gradient();
+        g.SetKeys(
+            new GradientColorKey[]
+            {
+                new GradientColorKey(CFirefly,                 0f),
+                new GradientColorKey(new Color(0.9f, 1f, 1f), 0.4f),
+                new GradientColorKey(CFirefly,                 1f)
+            },
+            new GradientAlphaKey[]
+            {
+                new GradientAlphaKey(0f,   0f),
+                new GradientAlphaKey(1f,   0.10f),
+                new GradientAlphaKey(0.1f, 0.25f),
+                new GradientAlphaKey(1f,   0.40f),
+                new GradientAlphaKey(0.1f, 0.55f),
+                new GradientAlphaKey(0.9f, 0.70f),
+                new GradientAlphaKey(0f,   1f)
+            }
+        );
+        col.color = new ParticleSystem.MinMaxGradient(g);
+
+        var n = _dreamFireflies.noise;
         n.enabled = true;
-        n.strength = 0.45f;
-        n.frequency = 0.12f;
-        n.scrollSpeed = 0.08f;
+        n.strength = 0.5f;
+        n.frequency = 0.3f;
+        n.scrollSpeed = 0.2f;
+        n.octaveCount = 2;
         n.quality = ParticleSystemNoiseQuality.Medium;
 
-        var r = Rend(_dustMotes);
+        var r = Rend(_dreamFireflies);
         r.renderMode = ParticleSystemRenderMode.Billboard;
-        r.sortingOrder = 2;
-        SetMat(r, CMote, true);
+        r.sortingOrder = 4;
+        r.sortingLayerName = "Default";
+        SetCircleMat(r, CFirefly, true);
 
-        _dustMotes.Play();
+        _dreamFireflies.Play();
     }
 
-    // ══ LAYER 3 — ROCK DEBRIS ═════════════════════════════════
-    void BuildRockDebris()
+    // ═══════════════════════════════════════════
+    //  LAYER 3 — ICE MOTES
+    // ═══════════════════════════════════════════
+
+    void BuildIceMotes()
     {
-        _rockDebris = Make("RockDebris");
-        var m = _rockDebris.main;
-        m.duration = 5f;
+        _iceMotes = Make("IceMotes");
+        _iceMotes.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        var m = _iceMotes.main;
+        m.duration = 6f;
         m.loop = true;
-        m.startLifetime = Rand(2f, 5f);
-        m.startSpeed = Rand(0.1f, 1.0f);
-        m.startSize = Rand(0.025f, 0.07f);   // small — never square-looking
-        m.startColor = A(CDebris, ADebris);
-        m.startRotation = Rand(0f, 360f * Mathf.Deg2Rad);
+        m.startLifetime = Rand(3f, 8f);
+        m.startSpeed = Rand(0.02f, 0.3f);
+        m.startSize = Rand(0.08f, 0.25f);
+        m.startColor = A(CIceMote, AMote);
         m.simulationSpace = ParticleSystemSimulationSpace.World;
-        m.maxParticles = 60;
-        m.gravityModifier = 0.03f;
+        m.maxParticles = 200;
+        m.gravityModifier = -0.005f;
 
-        var e = _rockDebris.emission;
-        e.rateOverTime = 7f;
+        var e = _iceMotes.emission;
+        e.rateOverTime = 25f;
 
-        var s = _rockDebris.shape;
+        var s = _iceMotes.shape;
         s.enabled = true;
         s.shapeType = ParticleSystemShapeType.Box;
-        s.scale = new Vector3(22f, 9f, 1f);
+        s.scale = new Vector3(40f, 22f, 1f);
 
-        _debrisVel = _rockDebris.velocityOverLifetime;
-        _debrisVel.enabled = true;
-        _debrisVel.space = ParticleSystemSimulationSpace.World;
-        SetVelocity(_debrisVel, -0.6f, -2.0f, -0.2f, 0.1f);
+        _motesVel = _iceMotes.velocityOverLifetime;
+        _motesVel.enabled = true;
+        _motesVel.space = ParticleSystemSimulationSpace.World;
+        SetVel(_motesVel, -0.3f, -1.2f, -0.08f, 0.08f);
 
-        var rot = _rockDebris.rotationOverLifetime;
-        rot.enabled = true;
-        rot.z = Rand(-60f * Mathf.Deg2Rad, 60f * Mathf.Deg2Rad);
+        var sOL = _iceMotes.sizeOverLifetime;
+        sOL.enabled = true;
+        var c = new AnimationCurve();
+        c.AddKey(0f, 0f);
+        c.AddKey(0.15f, 1f);
+        c.AddKey(0.5f, 0.5f);
+        c.AddKey(0.75f, 1f);
+        c.AddKey(1f, 0f);
+        sOL.size = new ParticleSystem.MinMaxCurve(1f, c);
 
-        AlphaLife(_rockDebris, CDebris, new[] { 0f, 0.15f, 0.85f, 1f }, new[] { 0f, 1f, 0.5f, 0f });
+        AlphaLife(_iceMotes, CIceMote,
+            new[] { 0f, 0.1f, 0.5f, 0.9f, 1f },
+            new[] { 0f, 1f, 0.5f, 1f, 0f });
 
-        var n = _rockDebris.noise;
+        var n = _iceMotes.noise;
         n.enabled = true;
-        n.strength = 0.18f;
-        n.frequency = 0.25f;
+        n.strength = 0.25f;
+        n.frequency = 0.2f;
+        n.scrollSpeed = 0.1f;
+        n.quality = ParticleSystemNoiseQuality.Medium;
 
-        var r = Rend(_rockDebris);
+        var r = Rend(_iceMotes);
         r.renderMode = ParticleSystemRenderMode.Billboard;
-        r.sortingOrder = 1;
-        SetMat(r, CDebris, false);
+        r.sortingOrder = 3;
+        r.sortingLayerName = "Default";
+        SetCircleMat(r, CIceMote, true);
 
-        _rockDebris.Play();
+        _iceMotes.Play();
     }
 
-    // ══ LAYER 4 — DREAM MIST ══════════════════════════════════
-    // Uses many small overlapping particles instead of few large
-    // ones — avoids the "square" look entirely.
-    void BuildDreamMist()
+    // ═══════════════════════════════════════════
+    //  LAYER 4 — VOID MIST
+    // ═══════════════════════════════════════════
+
+    void BuildVoidMist()
     {
-        _dreamMist = Make("DreamMist");
-        var m = _dreamMist.main;
+        _voidMist = Make("VoidMist");
+        _voidMist.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        var m = _voidMist.main;
         m.duration = 8f;
         m.loop = true;
         m.startLifetime = Rand(4f, 9f);
-        m.startSpeed = Rand(0.2f, 0.8f);
-        m.startSize = Rand(0.3f, 1.2f);     // smaller — no squares
-        m.startColor = A(CMist, AMist);
+        m.startSpeed = Rand(0.1f, 0.4f);
+        m.startSize = Rand(0.5f, 1.8f);
+        m.startColor = A(CVoidMist, AVoid);
         m.simulationSpace = ParticleSystemSimulationSpace.World;
-        m.maxParticles = 60;                    // more particles, smaller size
-        m.gravityModifier = -0.008f;
+        m.maxParticles = 100;
+        m.gravityModifier = -0.003f;
 
-        var e = _dreamMist.emission;
-        e.rateOverTime = 5f;
+        var e = _voidMist.emission;
+        e.rateOverTime = 10f;
 
-        var s = _dreamMist.shape;
+        var s = _voidMist.shape;
         s.enabled = true;
         s.shapeType = ParticleSystemShapeType.Box;
-        s.scale = new Vector3(32f, 16f, 1f);
+        s.scale = new Vector3(40f, 4f, 1f);
+        s.position = new Vector3(0f, -3f, 0f);
 
-        var vel = _dreamMist.velocityOverLifetime;
+        var vel = _voidMist.velocityOverLifetime;
         vel.enabled = true;
         vel.space = ParticleSystemSimulationSpace.World;
-        SetVelocity(vel, -0.4f, -1.2f, -0.05f, 0.15f);
+        SetVel(vel, -0.3f, -1.0f, -0.05f, 0.05f);
 
-        AlphaLife(_dreamMist, CMist, new[] { 0f, 0.3f, 0.7f, 1f }, new[] { 0f, 1f, 1f, 0f });
-
-        var sOL = _dreamMist.sizeOverLifetime;
+        var sOL = _voidMist.sizeOverLifetime;
         sOL.enabled = true;
         var c = new AnimationCurve();
-        c.AddKey(0f, 0.0f);
-        c.AddKey(0.35f, 1.0f);
-        c.AddKey(0.65f, 0.9f);
-        c.AddKey(1f, 0.0f);
+        c.AddKey(0f, 0f);
+        c.AddKey(0.2f, 1f);
+        c.AddKey(0.8f, 0.7f);
+        c.AddKey(1f, 0f);
         sOL.size = new ParticleSystem.MinMaxCurve(1f, c);
 
-        var n = _dreamMist.noise;
+        AlphaLife(_voidMist, CVoidMist,
+            new[] { 0f, 0.2f, 0.8f, 1f },
+            new[] { 0f, 0.8f, 0.6f, 0f });
+
+        var n = _voidMist.noise;
         n.enabled = true;
-        n.strength = 0.6f;
+        n.strength = 1.2f;
         n.frequency = 0.08f;
         n.scrollSpeed = 0.04f;
+        n.octaveCount = 3;
         n.quality = ParticleSystemNoiseQuality.High;
 
-        var r = Rend(_dreamMist);
+        var r = Rend(_voidMist);
         r.renderMode = ParticleSystemRenderMode.Billboard;
-        r.sortingOrder = 0;
-        SetMat(r, CMist, true);
+        r.sortingOrder = 1;
+        r.sortingLayerName = "Default";
+        SetCircleMat(r, new Color(0.25f, 0.20f, 0.35f), true);
 
-        _dreamMist.Play();
+        _voidMist.Play();
     }
 
-    // ══ RUNTIME ═══════════════════════════════════════════════
+    // ═══════════════════════════════════════════
+    //  RUNTIME
+    // ═══════════════════════════════════════════
 
     void DoFade()
     {
@@ -329,12 +400,19 @@ public class DreamWindVFX : MonoBehaviour
     {
         _gustTimer += Time.deltaTime;
         float spd = playerRb ? Mathf.Abs(playerRb.linearVelocity.x) : 0f;
-        if (!_gustActive && _gustTimer >= _nextGust) TriggerGust(gustStrength);
-        if (!_gustActive && spd >= dashSpeedThreshold) TriggerGust(gustStrength * 2f);
-        _gustCur = Mathf.Lerp(_gustCur, _gustTarget, Time.deltaTime * (_gustActive ? 9f : 4f));
+
+        if (!_gustActive && _gustTimer >= _nextGust)
+            TriggerGust(gustStrength);
+        if (!_gustActive && spd >= dashSpeedThreshold)
+            TriggerGust(gustStrength * 1.8f);
+
+        _gustCur = Mathf.Lerp(_gustCur, _gustTarget,
+                              Time.deltaTime * (_gustActive ? 8f : 3f));
+
         if (_gustActive && _gustTimer >= _nextGust + gustDuration)
         {
-            _gustActive = false; _gustTarget = 0f;
+            _gustActive = false;
+            _gustTarget = 0f;
             _nextGust = _gustTimer + Random.Range(gustIntervalMin, gustIntervalMax);
         }
     }
@@ -343,36 +421,44 @@ public class DreamWindVFX : MonoBehaviour
     {
         float spd = playerRb ? Mathf.Abs(playerRb.linearVelocity.x) : 0f;
         float wind = (baseWindSpeed + spd * playerSpeedInfluence + _gustCur) * _alpha;
-        SetVelocity(_streaksVel, -wind * 1.2f, -wind * 1.9f, -1.2f, 1.2f);
-        SetVelocity(_motesVel, -wind * 0.25f, -wind * 0.55f, -0.1f, 0.35f);
-        SetVelocity(_debrisVel, -wind * 0.35f, -wind * 0.75f, -0.2f, 0.1f);
+
+        SetVel(_streaksVel, -wind * 1.3f, -wind * 2.2f, -0.8f, 0.8f);
+        SetVel(_firefliesVel, -wind * 0.1f, -wind * 0.3f, -0.06f, 0.06f);
+        SetVel(_motesVel, -wind * 0.1f, -wind * 0.35f, -0.08f, 0.08f);
     }
 
     void SetAllAlpha(float a)
     {
-        PS(_streaks, CStreak, AStreak * a);
-        PS(_dustMotes, CMote, AMote * a);
-        PS(_rockDebris, CDebris, ADebris * a);
-        PS(_dreamMist, CMist, AMist * a);
+        SetPS(_coldStreaks, CColdStreak, AStreak * a);
+        SetPS(_dreamFireflies, CFirefly, AFirefly * a);
+        SetPS(_iceMotes, CIceMote, AMote * a);
+        SetPS(_voidMist, CVoidMist, AVoid * a);
     }
 
-    void PS(ParticleSystem ps, Color c, float a)
+    void SetPS(ParticleSystem ps, Color c, float a)
     {
         if (ps == null) return;
-        var main = ps.main; main.startColor = A(c, a);
+        var main = ps.main;
+        main.startColor = A(c, a);
     }
 
-    // ══ PUBLIC API ════════════════════════════════════════════
+    // ═══════════════════════════════════════════
+    //  PUBLIC API
+    // ═══════════════════════════════════════════
 
-    public void FadeIn(float dur = 0.8f) { _fadeTarget = 1f; _fadeDur = dur; _fading = true; }
-    public void FadeOut(float dur = 1.2f) { _fadeTarget = 0f; _fadeDur = dur; _fading = true; }
+    public void FadeIn(float dur = 1.0f) { _fadeTarget = 1f; _fadeDur = dur; _fading = true; }
+    public void FadeOut(float dur = 1.5f) { _fadeTarget = 0f; _fadeDur = dur; _fading = true; }
 
     public void TriggerGust(float strength)
     {
-        _gustActive = true; _gustTarget = strength; _gustTimer = _nextGust;
+        _gustActive = true;
+        _gustTarget = strength;
+        _gustTimer = _nextGust;
     }
 
-    // ══ HELPERS ═══════════════════════════════════════════════
+    // ═══════════════════════════════════════════
+    //  HELPERS
+    // ═══════════════════════════════════════════
 
     ParticleSystem Make(string n)
     {
@@ -388,13 +474,11 @@ public class DreamWindVFX : MonoBehaviour
     static ParticleSystem.MinMaxCurve Rand(float a, float b) =>
         new ParticleSystem.MinMaxCurve(a, b);
 
-    // Sets all 3 axes to TwoConstants mode at once — fixes "curves must be same mode"
-    static void SetVelocity(ParticleSystem.VelocityOverLifetimeModule vel,
-                            float xMin, float xMax,
-                            float yMin, float yMax)
+    static void SetVel(ParticleSystem.VelocityOverLifetimeModule vel,
+                       float xMin, float xMax, float yMin, float yMax)
     {
         var zero = new ParticleSystem.MinMaxCurve(0f, 0f);
-        vel.x = zero; vel.y = zero; vel.z = zero;   // prime all to TwoConstants first
+        vel.x = zero; vel.y = zero; vel.z = zero;
         vel.x = new ParticleSystem.MinMaxCurve(xMin, xMax);
         vel.y = new ParticleSystem.MinMaxCurve(yMin, yMax);
         vel.z = new ParticleSystem.MinMaxCurve(0f, 0f);
@@ -408,50 +492,54 @@ public class DreamWindVFX : MonoBehaviour
         mod.enabled = true;
         var g = new Gradient();
         g.SetKeys(
-            new[] { new GradientColorKey(col, 0f), new GradientColorKey(col, 1f) },
-            System.Array.ConvertAll(t, (i) => new GradientAlphaKey(a[System.Array.IndexOf(t, i)], i))
+            new GradientColorKey[]
+            {
+                new GradientColorKey(col, 0f),
+                new GradientColorKey(col, 1f)
+            },
+            System.Array.ConvertAll(t, i =>
+                new GradientAlphaKey(a[System.Array.IndexOf(t, i)], i))
         );
         mod.color = new ParticleSystem.MinMaxGradient(g);
     }
 
-    void SetMat(ParticleSystemRenderer r, Color tint, bool additive)
+    Texture2D CreateSoftCircleTexture(int size = 64)
     {
-        // For stretched streaks, URP Particles/Unlit works fine.
-        // For billboard particles (mist, motes, debris), Sprites/Default
-        // is the most reliable in URP 2D projects — no square artifacts.
-        Shader sh;
-        if (r.renderMode == ParticleSystemRenderMode.Stretch)
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        Vector2 center = new Vector2(size * 0.5f, size * 0.5f);
+        float radius = size * 0.5f;
+
+        for (int y = 0; y < size; y++)
         {
-            sh = Shader.Find("Universal Render Pipeline/Particles/Unlit")
-              ?? Shader.Find("Particles/Standard Unlit")
-              ?? Shader.Find("Sprites/Default");
-        }
-        else
-        {
-            // Billboard particles — always use Sprites/Default in URP 2D
-            sh = Shader.Find("Sprites/Default")
-              ?? Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), center);
+                float normalized = dist / radius;
+                float alpha = Mathf.Clamp01(1f - normalized);
+                alpha = alpha * alpha * alpha;
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
         }
 
-        if (sh == null) return;
+        tex.Apply();
+        return tex;
+    }
+
+    void SetCircleMat(ParticleSystemRenderer r, Color tint, bool additive)
+    {
+        Shader sh = additive
+            ? (Shader.Find("Particles/Additive")
+            ?? Shader.Find("Legacy Shaders/Particles/Additive")
+            ?? Shader.Find("Sprites/Default"))
+            : (Shader.Find("Particles/Alpha Blended")
+            ?? Shader.Find("Legacy Shaders/Particles/Alpha Blended")
+            ?? Shader.Find("Sprites/Default"));
+
+        if (sh == null) { Debug.LogWarning("[DreamWindVFX] Shader not found: " + r.name); return; }
+
         var mat = new Material(sh);
-        mat.color = additive
-            ? new Color(tint.r, tint.g, tint.b, 0.6f)
-            : new Color(tint.r, tint.g, tint.b, 0.5f);
-
-        if (additive && r.renderMode == ParticleSystemRenderMode.Stretch)
-        {
-            mat.SetFloat("_Surface", 1f);
-            mat.SetFloat("_Blend", 3f);
-            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
-            mat.renderQueue = 3000;
-        }
-        else
-        {
-            mat.renderQueue = 3000;
-        }
-
+        mat.color = new Color(tint.r, tint.g, tint.b, additive ? 0.9f : 0.7f);
+        mat.mainTexture = _softCircleTex;
         r.material = mat;
     }
 }

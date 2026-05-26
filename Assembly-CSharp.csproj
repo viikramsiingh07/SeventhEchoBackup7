@@ -69,6 +69,7 @@
     <Compile Include="Assets\Prefabs\Player\Scripts\ParallaxLayer.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\GhostTrail.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\WindZone.cs" />
+    <Compile Include="Assets\Prefabs\Player\Scripts\PlayerAttack.cs" />
     <Compile Include="Assets\Prefabs\Enemy\Scripts\StalkerHealth.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\PlayerHealth.cs" />
     <Compile Include="Assets\Prefabs\Player\Scripts\CameraDown.cs" />
